@@ -1,12 +1,23 @@
-FROM python:3.10.8-slim-buster
+FROM python:3.10-slim-buster
 
-RUN apt update && apt upgrade -y
-RUN apt install git -y
-COPY requirements.txt /requirements.txt
+# Create a non-root user
+RUN useradd -ms /bin/bash pirouser
 
-RUN cd /
-RUN pip3 install -U pip && pip3 install -U -r requirements.txt
-RUN mkdir /DQTheFileDonor
-WORKDIR /DQTheFileDonor
-COPY start.sh /start.sh
-CMD ["/bin/bash", "/start.sh"]
+# Update and install dependencies
+RUN apt-get update && apt-get upgrade -y \
+    && apt-get install -y git build-essential
+
+WORKDIR /bot
+# Copy requirements file separately and install dependencies
+COPY requirements.txt /bot/requirements.txt
+RUN pip install --upgrade pip && pip install -U -r requirements.txt
+
+COPY . .
+
+# Set ownership of the application directory to the non-root user
+RUN chown -R pirouser:pirouser /bot
+
+# Switch to the non-root user
+USER pirouser
+
+CMD ["python3", "bot.py"]
